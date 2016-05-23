@@ -1,0 +1,169 @@
+package graphing;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+import javax.swing.JFrame;
+
+class GBar
+{
+	String text;
+	int value;
+	GBar(String t, int v)
+	{
+		text=t;
+		value =v;
+	}
+}
+
+public class GraphBeginnings extends JFrame{
+
+	ArrayList<GBar> gbarArr = new ArrayList<GBar>();
+	String graphName = "";
+
+	GraphBeginnings(String fileName)
+	{
+		super();
+		process(fileName);
+		
+		setTitle(graphName);
+		setBackground(Color.red);
+		setSize(600,600);
+		setVisible(true);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+	}
+
+	void process(String fileName)
+	{
+		Scanner input = null;
+		String data = "";
+		String name = "";
+		int stats = 0;
+
+		try
+		{
+			FileInputStream fs = new FileInputStream(fileName);
+			input = new Scanner(fs).useDelimiter("\\n");
+
+			if(input.hasNext())
+			{
+				graphName = input.nextLine();
+			}
+			
+			while(input.hasNext())
+			{
+				data = input.next();
+				String[] strArr = new String[1];
+				strArr = data.split(";\\s");
+				name = strArr[0];
+				stats = Integer.parseInt(strArr[1].trim());
+				GBar g = new GBar(name, stats);
+				gbarArr.add(g);
+			}
+		}
+
+		catch(FileNotFoundException e)
+		{
+			System.out.println("Error: " + e);
+		}
+
+		catch(InputMismatchException e)
+		{
+			System.out.println("Error: " + e);
+		}
+
+		finally
+		{
+			if (input != null)
+				input.close();
+		}
+	}
+
+	// Find the maximum width of the strings in pixels
+	int getMaxTextWidth(ArrayList<GBar> garr, FontMetrics fm)
+	{
+		int maxValue=0;
+		for (int i=0; i < garr.size(); i++)
+		{
+			int width = fm.stringWidth(garr.get(i).text);
+			if (width > maxValue)
+				maxValue = width;
+		}
+		return maxValue;            
+	}
+
+	// Find the maximum value in the ArrayList
+	int getMaxBarWidth(ArrayList<GBar> garr)
+	{
+		int maxValue=0;
+		for (int i=0; i < garr.size(); i++)
+		{
+			int value = garr.get(i).value;
+			if (value > maxValue)
+				maxValue = value;
+		}
+		return maxValue;            
+	}
+	public void paint(Graphics g)
+	{
+		super.paint(g);
+		Dimension dimen = getSize();
+		Insets insets = getInsets();
+		int top = insets.top;
+		int left = insets.left;
+		int right = insets.right;
+		int bottom = insets.bottom;
+		int myBorder = 10;
+
+		Font font = g.getFont();
+		FontMetrics fm = getFontMetrics(font);
+		int fontHeight = fm.getHeight();
+		int maxAscent = fm.getMaxAscent();
+
+		int strMaxWidth = left + getMaxTextWidth( gbarArr, fm) + myBorder;
+		int x_bar_start =  strMaxWidth +1/* a little white space pad*/; 
+
+		int barMaxValue = getMaxBarWidth(gbarArr);
+		double scale = (dimen.width -x_bar_start - right) / (double) barMaxValue;
+
+		int y_start = top + myBorder;
+
+		int bar_height = fontHeight;
+		
+		g.setColor(Color.red);
+		g.fillRect(left, top, dimen.width , dimen.height);
+		g.setColor(Color.white);
+		g.fillRect(left + myBorder, top + myBorder, dimen.width - 2 * (left + myBorder) - 1, dimen.height - 2 * (myBorder)- top - bottom -1);
+
+		for (int i=0; i < gbarArr.size(); i++)
+		{
+			String text = gbarArr.get(i).text;
+			int strWidth = fm.stringWidth(text);
+			int value =gbarArr.get(i).value;
+			int scaledValue = (int)(value * scale); 
+			g.setColor(Color.black);
+			g.drawString(text, strMaxWidth - strWidth, y_start + maxAscent);
+			g.setColor(Color.green);
+			g.fillRect(x_bar_start, y_start, scaledValue - myBorder - 1, bar_height);
+
+			y_start += fontHeight + 10/*  a little space between rows */;
+		}
+		g.drawLine(strMaxWidth, top, strMaxWidth, dimen.height);
+	}
+
+	public static void main(String[] args) {
+		ArrayList<GBar> garr = new ArrayList<GBar>();
+		GraphBeginnings gb= new GraphBeginnings("graphing.txt");
+
+	}
+
+}
